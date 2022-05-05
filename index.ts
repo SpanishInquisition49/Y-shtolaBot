@@ -1,6 +1,22 @@
-import DiscordJS, { Intents, TextChannel, VoiceState } from 'discord.js';
+import DiscordJS, { Intents, MessageEmbed, MessageEmbedAuthor, TextChannel, VoiceState } from 'discord.js';
 import dotenv from 'dotenv';
+import menu from './menu.json';
 
+enum DishType {
+    Colazione = 'Colazione',
+    Antipasto = 'Antipasto',
+    Pane = 'Pane',
+    Zuppe = 'Zuppe',
+    Primo = 'Primo',
+    Contorno = 'Contorno',
+    Dessert = 'Dessert',
+    Drink = 'Drink'
+}
+
+interface Dish {
+    name:string;
+    type:string;
+}
 
 dotenv.config();
 
@@ -18,21 +34,23 @@ const client = new DiscordJS.Client({
 
 let channel: TextChannel | undefined;
 let spadellaCounter = Number(process.env.SPADELLA_COUNTER)
-
+let dishMenu: Dish[] = [];
 
 client.on('ready', async () => {
     console.log('Discord Bot ready');
     channel = await client.channels.fetch(SpadellaLogId) as TextChannel;
+    getDailyMenu();
+    setInterval(getDailyMenu, (24 * 60 * 60 * 1000))
 });
 
 client.on('messageCreate', (message) => {
-    let reply: string;
+    let reply: string | MessageEmbed;
     switch(message.content){
         case 'y.help':
             reply = 'Aiutati da solo, io non so che dire...';
             break;
         case 'y.menu':
-            reply = 'Il menu ddel giorno è ancora WIP';
+            reply = getEmbedMessage();
             break;
         case 'y.panlist':
             reply = 'La classifica dei più spadellati è ancora WIP';
@@ -41,9 +59,14 @@ client.on('messageCreate', (message) => {
             return;
     }
 
-    message.reply({
-        content: reply,
-    });
+    if(typeof reply === 'string')
+        message.reply({
+            content: reply,
+        });
+    else
+        message.reply({
+            embeds: [reply]
+        })
 
 });
 
@@ -70,4 +93,41 @@ else if(oldState.channelId === null) // joined
     console.log(`${nickname} joined channel`, newState.channel?.id);
 else // moved
     console.log(`${nickname} moved channels`, oldState.channel?.id, newState.channel?.id);
+}
+
+function getDailyMenu() {
+    console.log('New Daily Menu :)')
+    for(let type in DishType){
+        dishMenu.push(getRandomDish(type as DishType))
+    }
+}
+
+function filterMenu(type: DishType): Dish[] {
+    return menu.filter((e) => e.type === type) as Dish[];
+}
+
+function getRandomDish(type: DishType): Dish {
+    let tmp = filterMenu(type);
+    return tmp[randomIntFromInterval(0, tmp.length-1)];
+}
+
+function randomIntFromInterval(min: number, max: number): number { // min and max included 
+    return Math.floor(Math.random() * (max - min + 1) + min) 
+}
+
+function getEmbedMessage():MessageEmbed {
+    let reply: MessageEmbed = new MessageEmbed();
+    let a:MessageEmbedAuthor = {name: 'Lahabrea'};
+    reply.author = a
+    reply.description = dailyMenoToString();
+    reply.title = '~ Menu del Giorno ~'
+    reply.setColor("RANDOM");
+    return reply;
+}
+
+function dailyMenoToString():string {
+    let res = ''
+    for(let i = 0; i<dishMenu.length; i++)
+        res += dishMenu[i].name + '\n';
+    return res;
 }

@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0"
+  },
+  "name": "y-shtolabot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpanishInquisition49/Y-shtolaBot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SpanishInquisition49/Y-shtolaBot/issues"
+  },
+  "homepage": "https://github.com/SpanishInquisition49/Y-shtolaBot#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^17.0.31"
+  }
+}
