@@ -1,4 +1,4 @@
-import DiscordJS, { Intents, MessageEmbed, MessageEmbedAuthor, TextChannel, VoiceState } from 'discord.js';
+import DiscordJS, { Guild, Intents, MessageEmbed, MessageEmbedAuthor, MessageReaction, TextChannel, User, VoiceState } from 'discord.js';
 import dotenv from 'dotenv';
 import menu from './menu.json';
 
@@ -21,26 +21,40 @@ interface Dish {
 dotenv.config();
 
 const DEBUG = process.env.DEBUG == '1';
-const SpadellaId = process.env.SPADELLA_CHANNEL || '';
-const SpadellaLogId = process.env.SPADELLA_LOG_CHANNEL || '';
+const spadellaId = process.env.SPADELLA_CHANNEL || '';
+const spadellaLogId = process.env.SPADELLA_LOG_CHANNEL || '';
+const lowLevelFCRole = process.env.LOW_FC_ROLE || '';
+const guestRole = process.env.GUEST_ROLE || '';
+const guildID = process.env.GUILD_ID || '';
+const convalidationMessageID = process.env.CONVALIDATION_MSG_ID || '';
+const donnolinaEmojiID = process.env.DONNOLINA_EMOJI_ID || '';
 
 const client = new DiscordJS.Client({
     intents: [
         Intents.FLAGS.GUILDS,
         Intents.FLAGS.GUILD_MESSAGES,
         Intents.FLAGS.GUILD_VOICE_STATES,
+        Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_INTEGRATIONS,
+        Intents.FLAGS.GUILD_SCHEDULED_EVENTS,
+        Intents.FLAGS.GUILD_MEMBERS,
+        //Intents.FLAGS.GUILD_PRESENCES
     ],
+    partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
 });
-
 let channel: TextChannel | undefined;
 let spadellaCounter = Number(process.env.SPADELLA_COUNTER)
 let dishMenu: Dish[] = [];
+let guild: Guild
 
 client.on('ready', async () => {
-    console.log('Discord Bot ready');
-    channel = await client.channels.fetch(SpadellaLogId) as TextChannel;
+    guild = client.guilds.cache.find(g => g.id === guildID)
+    channel = await client.channels.fetch(spadellaLogId) as TextChannel;
     getDailyMenu();
     setInterval(getDailyMenu, (24 * 60 * 60 * 1000))
+    console.log('Discord Bot ready');
 });
 
 client.on('messageCreate', (message) => {
@@ -77,12 +91,27 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     if(DEBUG)
         logChannelMovement(oldState, newState, nickname!);
     //Qualcuno è stato Spadellato
-    if(newState.channelId === SpadellaId && channel && newState.channelId !== oldState.channelId){
+    if(newState.channelId === spadellaId && channel && newState.channelId !== oldState.channelId){
         console.log(`${nickname} è stato spadellato`);
         await channel.send(`${nickname} è stato spadellato`)
         spadellaCounter++;
     }
 });
+
+client.on('messageReactionAdd', async (reaction, user) => {
+    let lowLevelRole = reaction.message.guild.roles.cache.find(r => r.name.toLowerCase() === lowLevelFCRole);
+    let guest_role = reaction.message.guild.roles.cache.find(r => r.name.toLowerCase() === guestRole);
+    let member = guild.members.cache.find(m => m.id === user.id)
+    if(reaction.message.id === convalidationMessageID && reaction.emoji.id === donnolinaEmojiID){
+        member.roles.add(lowLevelRole);
+        console.log(`${member.nickname ? member.nickname : member.user.username} ha ricevuto il ruolo Donnolina`);
+    }
+    else if(reaction.message.id === convalidationMessageID && reaction.emoji.name === '⛺'){
+        member.roles.add(guest_role);
+        console.log(`${member.nickname ? member.nickname : member.user.username} ha ricevuto il ruolo Vagabondo`);
+    }    
+});
+
 
 client.login(process.env.TOKEN);
 
