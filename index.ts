@@ -59,19 +59,22 @@ client.on('ready', async () => {
 
 client.on('messageCreate', (message) => {
     let reply: string | MessageEmbed;
-    switch(message.content){
-        case 'y.help':
-            reply = 'Aiutati da solo, io non so che dire...';
-            break;
-        case 'y.menu':
-            reply = getEmbedMessage();
-            break;
-        case 'y.panlist':
-            reply = 'La classifica dei più spadellati è ancora WIP';
-            break;
-        default: 
-            return;
-    }
+    if(message.content.includes('y.random'))
+        reply = getRandomFrom(message.content.split(' ').filter(e => e !== 'y.random'));
+    else
+        switch(message.content){
+            case 'y.help':
+                reply = 'Aiutati da solo, io non so che dire...';
+                break;
+            case 'y.menu':
+                reply = getEmbedMessage();
+                break;
+            case 'y.panlist':
+                reply = 'La classifica dei più spadellati è ancora WIP';
+                break;
+            default: 
+                return;
+        }
 
     if(typeof reply === 'string')
         message.reply({
@@ -125,6 +128,7 @@ else // moved
 }
 
 function getDailyMenu() {
+    dishMenu = [];
     console.log('New Daily Menu :)')
     for(let type in DishType){
         dishMenu.push(getRandomDish(type as DishType))
@@ -159,4 +163,8 @@ function dailyMenoToString():string {
     for(let i = 0; i<dishMenu.length; i++)
         res += dishMenu[i].name + '\n';
     return res;
+}
+
+function getRandomFrom<T>(a:T[]): T {
+    return a[randomIntFromInterval(0, a.length-1)]
 }
