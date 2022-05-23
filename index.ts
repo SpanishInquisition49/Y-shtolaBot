@@ -57,13 +57,14 @@ client.on("ready", async () => {
 });
 
 client.on("messageCreate", (message) => {
-  message.author;
   let reply: string | MessageEmbed = commandMessage(message);
-  
-  if (typeof reply === "string")
+  if (typeof reply === "string"){
+    if(reply === "")
+        return;
     message.reply({
-      content: reply,
+    content: reply,
     });
+  }
   else
     message.reply({
       embeds: [reply],
